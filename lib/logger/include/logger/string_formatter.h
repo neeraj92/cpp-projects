@@ -1,0 +1,4 @@
+#ifndef STRING_FORMATTER_H_
+#define STRING_FORMATTER_H_
+
+#endif  // STRING_FORMATTER_H_
