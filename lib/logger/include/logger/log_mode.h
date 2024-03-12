@@ -13,6 +13,12 @@ enum class LogLevel
     Error
 };
 
-[[nodiscard]] auto log_mode_to_string(LogLevel mode) -> std::string_view;
+[[nodiscard]] auto log_level_to_string(LogLevel mode) -> std::string_view;
+
+enum class LogMode
+{
+    File,
+    Console
+};
 
 }  // namespace logger

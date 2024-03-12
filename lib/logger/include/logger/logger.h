@@ -1,5 +1,6 @@
 #pragma once
 
+#include "logger/i_output.h"
 #include "logger/log_mode.h"
 
 #include "ds/in_memory_lockless_queue.h"
@@ -44,7 +45,7 @@ template <typename... TypesToLog>
 class Logger : public Formatter<StringLogStorage>, public Formatter<TypesToLog>...
 {
    public:
-    Logger(LogLevel level);
+    Logger(LogMode mode, LogLevel level, std::string_view file_name, bool append_date);
     ~Logger();
 
     template <typename Log>
@@ -55,6 +56,8 @@ class Logger : public Formatter<StringLogStorage>, public Formatter<TypesToLog>.
     [[nodiscard]] auto print_log() -> bool;
     LogLevel level_{LogLevel::Trace};
     std::jthread runner_;
+
+    std::unique_ptr<IOutput> output_;
 };
 
 }  // namespace logger

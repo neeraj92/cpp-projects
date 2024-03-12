@@ -2,7 +2,7 @@
 
 namespace logger {
 
-auto log_mode_to_string(LogLevel mode) -> std::string_view
+auto log_level_to_string(LogLevel mode) -> std::string_view
 {
     using enum LogLevel;
 

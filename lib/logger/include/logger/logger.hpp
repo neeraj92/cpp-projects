@@ -1,5 +1,8 @@
 #pragma once
 
+#include "logger/console_output.h"
+#include "logger/file_output.h"
+#include "logger/i_output.h"
 #include "logger/log_mode.h"
 #include "logger/logger.h"
 
@@ -7,8 +10,8 @@
 #include "utils/datetime.h"
 
 #include <filesystem>
-#include <iostream>
 #include <limits>
+#include <memory>
 #include <source_location>
 #include <sstream>
 #include <stop_token>
@@ -67,7 +70,7 @@ auto Formatter<T>::log_line_if_smallest(uint64_t smallest, std::string &print_st
         front_timestamp_ = 0;
         std::stringstream sstr;
         std::filesystem::path file_path(element->location.file_name());
-        sstr << datetime::convert_epoch_to_string(element->timestamp) << " [" << log_mode_to_string(element->level)
+        sstr << datetime::convert_epoch_to_string(element->timestamp) << " [" << log_level_to_string(element->level)
              << "] " << std::string(file_path.filename()) << ":" << element->location.line() << " "
              << element->data.to_string();
         print_string = sstr.str();
@@ -75,8 +78,21 @@ auto Formatter<T>::log_line_if_smallest(uint64_t smallest, std::string &print_st
 }
 
 template <typename... TypesToLog>
-Logger<TypesToLog...>::Logger(LogLevel level) : level_(level)
+Logger<TypesToLog...>::Logger(LogMode mode, LogLevel level, std::string_view file_name, bool append_date)
+    : level_(level)
 {
+    using enum LogMode;
+    switch (mode) {
+        case File: {
+            output_ = std::make_unique<FileOutput>(file_name, append_date);
+            break;
+        }
+        case Console: {
+            output_ = std::make_unique<ConsoleOutput>();
+            break;
+        }
+    }
+
     runner_ = std::jthread([this](const std::stop_token &token) { run(token); });
 }
 
@@ -115,7 +131,7 @@ auto Logger<TypesToLog...>::print_log() -> bool
 
         (static_cast<Formatter<TypesToLog> *>(this)->log_line_if_smallest(smallest_timestamp, to_publish), ...);
         static_cast<Formatter<StringLogStorage> *>(this)->log_line_if_smallest(smallest_timestamp, to_publish);
-        std::cout << to_publish << std::endl;
+        output_->publish(to_publish);
         return true;
     }
 
@@ -126,6 +142,7 @@ template <typename... TypesToLog>
 Logger<TypesToLog...>::~Logger()
 {
     runner_.request_stop();
+    runner_.join();
 }
 
 }  // namespace logger
